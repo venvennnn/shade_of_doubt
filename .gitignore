@@ -7,5 +7,6 @@ __pycache__/
 var/
 frontend/node_modules/
 frontend/.next/
+*.tsbuildinfo
 backend/var/
 *.db
