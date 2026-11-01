@@ -1,0 +1,68 @@
+services:
+  - type: web
+    name: shade-of-doubt-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: selfies
+      - key: STORAGE_BACKEND
+        value: supabase
+      - key: YOUCAM_API_KEY
+        sync: false
+      - key: YOUCAM_BASE_URL
+        value: https://yce-api-01.makeupar.com
+      - key: YOUCAM_FILE_PATH
+        value: /s2s/v2.0/file
+      - key: YOUCAM_TASK_PATH
+        value: /s2s/v2.1/task/skin-analysis
+      - key: YOUCAM_UNIT_COST_PER_TASK
+        sync: false
+      - key: YOUCAM_WEBHOOK_SECRET
+        sync: false
+      - key: OPERATOR_USER_IDS
+        sync: false
+
+  - type: worker
+    name: shade-of-doubt-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: python -m app.worker
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: selfies
+      - key: STORAGE_BACKEND
+        value: supabase
+      - key: YOUCAM_API_KEY
+        sync: false
+      - key: YOUCAM_BASE_URL
+        value: https://yce-api-01.makeupar.com
+      - key: YOUCAM_UNIT_COST_PER_TASK
+        sync: false
+      - key: YOUCAM_WEBHOOK_SECRET
+        sync: false

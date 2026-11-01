@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: #fff;
+  color: #17171f;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid #ff2f86;
+  outline-offset: 2px;
+}
+
+.hatched {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(23, 23, 31, 0.08),
+    rgba(23, 23, 31, 0.08) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
