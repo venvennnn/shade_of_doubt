@@ -16,7 +16,7 @@ export default function AuditPage() {
     refetchInterval: (query) => (query.state.data?.status === "running" ? 3000 : false),
     queryFn: () => api<ExperimentResult>(`/v1/experiments/${params.id}`, token),
   });
-  if (!token) return <p>Sign in on the Capture page.</p>;
+  if (!token) return <p>Preparing this browser.</p>;
   if (result.isLoading) return <p>Loading the audit.</p>;
   if (result.error) return <p role="alert">{(result.error as Error).message}</p>;
   if (!result.data) return null;

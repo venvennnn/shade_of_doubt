@@ -1,9 +1,9 @@
 from pathlib import Path
 
-import httpx
-
 from app.config import Settings
+from app.db import session_factory
 from app.errors import ConfigurationError
+from app.models import StoredObject
 
 
 class Storage:
@@ -41,64 +41,51 @@ class LocalStorage(Storage):
             target.unlink()
 
 
-class SupabaseStorage(Storage):
-    def __init__(self, settings: Settings):
-        if not settings.supabase_url or not settings.supabase_service_role_key:
-            raise ConfigurationError(
-                "storage_unconfigured",
-                "Supabase Storage is selected but the URL or service role key is missing.",
-                "Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. The service role key stays on the server.",
-            )
-        self.base = settings.supabase_url.rstrip("/") + "/storage/v1"
-        self.bucket = settings.supabase_storage_bucket
-        self.key = settings.supabase_service_role_key
-        self.http = httpx.Client(timeout=60.0)
-
-    def _headers(self, content_type: str | None = None) -> dict:
-        headers = {"Authorization": f"Bearer {self.key}", "apikey": self.key}
-        if content_type:
-            headers["Content-Type"] = content_type
-        return headers
+class DatabaseStorage(Storage):
+    """Photograph bytes in Postgres so the API and worker share one store."""
 
     def put(self, path: str, data: bytes, content_type: str) -> None:
-        response = self.http.post(
-            f"{self.base}/object/{self.bucket}/{path}",
-            content=data,
-            headers={**self._headers(content_type), "x-upsert": "true"},
-        )
-        if response.status_code >= 400:
-            raise ConfigurationError(
-                "storage_write_failed",
-                "Private storage rejected the upload.",
-                "Check the bucket exists, is private, and the service role can write to it.",
-            )
+        session = session_factory()()
+        try:
+            row = session.get(StoredObject, path)
+            if row is None:
+                session.add(StoredObject(path=path, content=data, content_type=content_type))
+            else:
+                row.content = data
+                row.content_type = content_type
+            session.commit()
+        finally:
+            session.close()
 
     def get(self, path: str) -> bytes:
-        response = self.http.get(f"{self.base}/object/{self.bucket}/{path}", headers=self._headers())
-        if response.status_code >= 400:
-            raise ConfigurationError("storage_read_failed", "Private storage could not read that object.", "")
-        return response.content
+        session = session_factory()()
+        try:
+            row = session.get(StoredObject, path)
+            if row is None:
+                raise FileNotFoundError(path)
+            return bytes(row.content)
+        finally:
+            session.close()
 
     def delete(self, path: str) -> None:
-        response = self.http.request(
-            "DELETE",
-            f"{self.base}/object/{self.bucket}",
-            headers={**self._headers("application/json")},
-            json={"prefixes": [path]},
-        )
-        if response.status_code >= 400:
-            raise ConfigurationError("storage_delete_failed", "Private storage could not delete that object.", "")
+        session = session_factory()()
+        try:
+            row = session.get(StoredObject, path)
+            if row is not None:
+                session.delete(row)
+                session.commit()
+        finally:
+            session.close()
 
 
 def build_storage(settings: Settings) -> Storage:
     backend = settings.resolved_storage_backend
     if backend == "local":
         return LocalStorage(settings.local_storage_dir)
-    if backend == "supabase":
-        return SupabaseStorage(settings)
+    if backend == "database":
+        return DatabaseStorage()
     raise ConfigurationError(
         "storage_unconfigured",
         "No storage backend is configured.",
-        "For production set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_STORAGE_BUCKET. "
-        "Local Compose may set STORAGE_BACKEND=local.",
+        "Set STORAGE_BACKEND=database on Railway, or STORAGE_BACKEND=local when the API and worker share a disk.",
     )

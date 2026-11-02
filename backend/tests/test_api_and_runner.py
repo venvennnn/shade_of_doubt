@@ -1,7 +1,5 @@
-import time
 import uuid
 
-import jwt
 import numpy as np
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -59,21 +57,6 @@ class FakeYouCam:
         return b"\x89PNG\r\n\x1a\noverlay"
 
 
-def _token(user_id="user-a"):
-    settings = get_settings()
-    return jwt.encode(
-        {
-            "sub": user_id,
-            "email": f"{user_id}@example.com",
-            "aud": "authenticated",
-            "iss": settings.supabase_url.rstrip("/") + "/auth/v1",
-            "exp": int(time.time()) + 3600,
-        },
-        settings.supabase_jwt_secret,
-        algorithm="HS256",
-    )
-
-
 def _png() -> bytes:
     rng = np.random.default_rng(1)
     array = rng.integers(30, 200, size=(900, 700, 3), dtype=np.uint8)
@@ -99,7 +82,7 @@ def _client(user_id="user-a"):
             session.close()
 
     app.dependency_overrides[get_db] = _db
-    app.dependency_overrides[get_principal] = lambda: Principal(user_id=user_id, email=f"{user_id}@example.com")
+    app.dependency_overrides[get_principal] = lambda: Principal(user_id=user_id)
     return TestClient(app)
 
 
@@ -126,7 +109,7 @@ def test_capture_plan_and_tenant_isolation(monkeypatch):
     assert again.json()["created"] is False
     conflict = client.post("/v1/experiments", json={"asset_id": asset_id, "concerns": ["pore"]}, headers={"Idempotency-Key": "same"})
     assert conflict.status_code == 409
-    app.dependency_overrides[get_principal] = lambda: Principal(user_id="user-b", email="user-b@example.com")
+    app.dependency_overrides[get_principal] = lambda: Principal(user_id="user-b")
     missing = client.get(f"/v1/experiments/{created.json()['experiment_id']}")
     assert missing.status_code == 404
     hidden = client.get(f"/v1/assets/{asset_id}/content")

@@ -16,7 +16,7 @@ export default function AuditIndex() {
     <div>
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-pink">03 / The audit</p>
       <h1 className="mt-2 text-4xl font-semibold tracking-tight">Audits</h1>
-      {!token && <p className="mt-3">Sign in on the Capture page to see your audits.</p>}
+      {!token && <p className="mt-3">Preparing this browser.</p>}
       {token && experiments.data?.experiments.length === 0 && <p className="mt-3">No audits yet. A chart is not shown until a live run returns scores.</p>}
       <ul className="mt-6 space-y-3">
         {experiments.data?.experiments.map((item) => (

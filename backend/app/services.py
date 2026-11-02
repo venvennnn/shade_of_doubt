@@ -161,7 +161,7 @@ def store_capture(session: Session, storage: Storage, settings: Settings, owner_
 def _owned_asset(session: Session, owner_id: str, asset_id: str) -> Asset:
     asset = session.get(Asset, asset_id)
     if asset is None or asset.owner_id != owner_id or asset.deleted_at is not None:
-        raise NotFoundError("asset_not_found", "That photograph is not in this account.", "")
+        raise NotFoundError("asset_not_found", "That photograph is not in this browser session.", "")
     return asset
 
 
@@ -266,7 +266,7 @@ def create_product(session: Session, settings: Settings, owner_id: str, payload:
 def confirm_product(session: Session, owner_id: str, product_id: str, confirmed: bool) -> dict:
     product = session.get(CatalogueProduct, product_id)
     if product is None or product.owner_id != owner_id:
-        raise NotFoundError("product_not_found", "That product is not in this account.", "")
+        raise NotFoundError("product_not_found", "That product is not in this browser session.", "")
     product.confirmed = confirmed
     session.flush()
     return _product_payload(session, product)
@@ -279,7 +279,7 @@ def _catalogue_snapshot(session: Session, owner_id: str, product_ids: list[str])
     found = {product.id: product for product in products}
     missing = [item for item in product_ids if item not in found]
     if missing:
-        raise NotFoundError("product_not_found", "A selected product is not in this account.", "")
+        raise NotFoundError("product_not_found", "A selected product is not in this browser session.", "")
     snapshot = []
     for product_id in product_ids:
         product = found[product_id]
@@ -545,7 +545,7 @@ def add_recapture(session: Session, storage: Storage, settings: Settings, owner_
 def owned_experiment(session: Session, owner_id: str, experiment_id: str) -> Experiment:
     experiment = session.get(Experiment, experiment_id)
     if experiment is None or experiment.owner_id != owner_id:
-        raise NotFoundError("experiment_not_found", "That audit is not in this account.", "")
+        raise NotFoundError("experiment_not_found", "That audit is not in this browser session.", "")
     return experiment
 
 
@@ -670,8 +670,8 @@ def publish_guided(session: Session, settings: Settings, owner_id: str, asset_id
     if owner_id not in settings.operators:
         raise ForbiddenError(
             "operator_only",
-            "Only configured operator accounts can publish a guided photograph.",
-            "Set OPERATOR_USER_IDS. With none published, the app requires an upload.",
+            "Only a configured operator session can publish a guided photograph.",
+            "Set OPERATOR_USER_IDS to the owner id from GET /v1/me. With none published, the app requires an upload.",
         )
     if not title.strip() or not rights.strip() or not consent.strip():
         raise ConflictError(

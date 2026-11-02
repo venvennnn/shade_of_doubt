@@ -12,7 +12,7 @@ export type RuntimeInfo = {
   minimum_valid_variants: number;
   user_daily_unit_cap: number;
   global_daily_unit_cap: number;
-  auth_configured: boolean;
+  session: "browser";
   storage_backend: string | null;
   score_direction: { value: string; meaning: string; source: string; limitations: string[] };
   pipeline: Record<string, unknown>;

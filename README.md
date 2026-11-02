@@ -8,9 +8,9 @@ This repository is **not production-verified**. Live YouCam calls were not made 
 
 ## Layout
 
-- `frontend` — Next.js App Router, TypeScript, Tailwind, Radix, TanStack Query, Recharts. Deploy on Vercel.
-- `backend` — FastAPI, SQLAlchemy, Alembic, the YouCam adapter, image pipeline, ranking, and the worker. Deploy the API and worker from the same image on Render.
-- Supabase Auth, Postgres, and private Storage are the managed persistence services. Local Compose can use Postgres and a disk folder instead of Storage.
+- `frontend` — Next.js App Router, TypeScript, Tailwind, Radix, TanStack Query, Recharts.
+- `backend` — FastAPI, SQLAlchemy, Alembic, the YouCam adapter, image pipeline, ranking, and the worker. The API and worker share one Docker image.
+- Postgres holds the tables and, in production, the photograph bytes. There is no account system. Each browser stores a random session and the API scopes rows to the hash of that session.
 
 ## Local API and worker
 
@@ -19,7 +19,7 @@ python3.12 -m venv .venv
 . .venv/bin/activate
 pip install -r backend/requirements.lock
 cp .env.example .env
-# Fill Supabase and YouCam values. Leave YOUCAM_UNIT_COST_PER_TASK empty until you confirm the account price.
+# Fill YouCam values. Leave YOUCAM_UNIT_COST_PER_TASK empty until you confirm the account price.
 
 createdb shade
 cd backend
@@ -44,7 +44,7 @@ npm run dev
 
 ## Compose
 
-Docker Compose starts Postgres, the API, the worker, and the web app. Copy `.env.example` to `.env` first. The Compose override stores images on a volume (`STORAGE_BACKEND=local`). Production should set `STORAGE_BACKEND=supabase`.
+Docker Compose starts Postgres, the API, the worker, and the web app. Copy `.env.example` to `.env` first. The Compose override stores images on a shared volume (`STORAGE_BACKEND=local`). Railway sets `STORAGE_BACKEND=database` so the separate API and worker share photograph bytes through Postgres.
 
 ```bash
 docker compose up --build
@@ -52,13 +52,25 @@ docker compose up --build
 
 API and worker images run `alembic upgrade head` before the process starts.
 
-## Production
+## Production on Railway
 
-- Frontend: Vercel project root `frontend`. Set `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY` at build time.
-- API and worker: `render.yaml`. Both need the same database, Supabase, and YouCam settings. `STORAGE_BACKEND=supabase`.
-- Supabase: email auth, a private bucket named `selfies`, and no public policy for object reads. The API uses the service role only on the server. JWT checks cover signature (HS256 secret or project JWKS), issuer, audience, and expiry. Every row is filtered by the token subject.
+The project graph is `.railway/railway.ts`: Postgres, an API service, a worker service, and the web service. Railway reads that file when you run the CLI. It is not applied by a git push on its own.
 
-Create the bucket before the first upload. Do not put the service role key or the YouCam key in the frontend.
+```bash
+npm install
+railway login
+railway link
+railway config plan
+railway config apply
+```
+
+After the first apply, open the API and worker services and set `YOUCAM_API_KEY` and `YOUCAM_UNIT_COST_PER_TASK`. The file keeps those with `preserve()`, so a later apply does not wipe them. Leave the unit cost empty until you confirm the figure on your YouCam account. The documented table lists 12 units for an SD task with 5–8 concerns.
+
+`DATABASE_URL` comes from the Postgres plugin. A `postgres://` URL is accepted and rewritten to `postgresql+psycopg://`. `FRONTEND_ORIGIN` and `NEXT_PUBLIC_API_URL` reference the generated public domains. `NEXT_PUBLIC_API_URL` is baked into the browser bundle, so the web service rebuilds when it changes.
+
+The API and worker images run `alembic upgrade head` before the process starts. Photographs are stored in the `stored_objects` table. There is no separate object store and no sign-in page.
+
+A browser that has not visited before creates a session in `localStorage`. History shows audits for that browser only. “Delete this browser’s data” removes those rows and starts a new session.
 
 ## Configuration that blocks paid work
 
@@ -91,7 +103,7 @@ Labels:
 
 ## Routes
 
-Authenticated, owner-scoped:
+Browser-session scoped. The bearer token is the random value stored in this browser, not a user account:
 
 - `POST /v1/consents`, `GET /v1/me`
 - `POST /v1/assets`, `GET /v1/assets/{id}`, `GET /v1/assets/{id}/content`
@@ -113,7 +125,7 @@ There is no cross-user image cache. A new audit always enqueues new provider tas
 Limits you cannot ignore:
 
 - YouCam documents processed results for about 24 hours and zip result URLs for about 2 hours. Overlays are copied into private storage when a URL is actually returned. A later deletion here does not delete the provider’s copy.
-- Database backups are the Supabase backup or PITR plan you enable. This app does not ship a second backup transport. Restore a backup, then run `alembic upgrade head` if the restored schema is older.
+- Database backups are the Railway Postgres backup or PITR plan you enable. This app does not ship a second backup transport. Restore a backup, then run `alembic upgrade head` if the restored schema is older. Photograph bytes live in that same database when `STORAGE_BACKEND=database`.
 - Worker crash: an expired lease requeues the job. A provider task id that was already stored is polled, not resubmitted. A submit that crashed before the task id was stored stays `needs_reconciliation`.
 - Monitor `GET /ready` (database and worker heartbeat age) and worker `GET /health`. Alert on jobs in `dead` or experiments in `needs_reconciliation`.
 

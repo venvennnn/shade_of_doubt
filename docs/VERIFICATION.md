@@ -20,7 +20,7 @@ Official references used while writing the adapter:
 - `pytest` in `backend`: 24 passed, and the Postgres-only queue test skipped when `TEST_DATABASE_URL` is unset. A separate run of `tests/test_queue_postgres.py` against local Postgres 16 passed (SKIP LOCKED claim and expired-lease recovery).
 - `alembic upgrade head` applied `20261101_0001` on Postgres 16.
 - `npm run build` in `frontend` succeeded on Next.js 15.5.28.
-- Docker Compose was not executed here because Docker was not available. The manifests are in `docker-compose.yml` and `render.yaml`.
+- Docker Compose was not executed here because Docker was not available. Local Compose is `docker-compose.yml`. The Railway project graph is `.railway/railway.ts`.
 - Browser, signed in with a local test token and no YouCam key: Capture shows the missing-key and empty-unit-cost configuration errors. Requesting the plan returns `youcam_unconfigured` with the text “YouCam credentials are not configured, so no analysis task can be submitted. Set YOUCAM_API_KEY from the YouCam API console. The API will not substitute saved or example scores.” Audit, History, and Compare recaptures stay empty. No chart, product, or score is drawn. At a narrow window the brand sits on its own row and “Compare recaptures” stays on one line.
 
 ## Still required before a production label
@@ -29,4 +29,4 @@ Official references used while writing the adapter:
 2. A worker restart while a job is leased, showing the job resumes without a second paid create when the task id is already stored.
 3. All six charts populated only from that run.
 4. A guided run that submits new tasks, or a recorded refusal because no rights-cleared guided photograph is published.
-5. Two accounts proving one cannot read the other’s photographs, and a deletion that removes stored objects.
+5. Two browser sessions proving one cannot read the other’s photographs, and a deletion that removes stored objects.
