@@ -1,0 +1,7 @@
+{
+  "name": "shade-of-doubt",
+  "private": true,
+  "devDependencies": {
+    "railway": "3.16.0"
+  }
+}

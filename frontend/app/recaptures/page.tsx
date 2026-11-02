@@ -42,7 +42,7 @@ export default function RecapturesPage() {
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-pink">04 / Compare recaptures</p>
       <h1 className="mt-2 text-4xl font-semibold tracking-tight">Genuine recaptures</h1>
       <p className="mt-2 max-w-2xl text-mute">Add a new photograph taken in the same conditions or in changed conditions. It is a separate live YouCam task, shown beside the synthetic deltas for that session only.</p>
-      {!token && <p className="mt-4">Sign in on the Capture page.</p>}
+      {!token && <p className="mt-4">Preparing this browser.</p>}
       {token && (
         <div className="mt-6 grid gap-3 sm:max-w-xl">
           <label>

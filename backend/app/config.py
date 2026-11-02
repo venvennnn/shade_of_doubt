@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Documented SD actions for Skin Analysis API v2.1. HD names are a separate tier
@@ -63,12 +64,6 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"
     api_public_url: str = "http://localhost:8000"
 
-    supabase_url: str = ""
-    supabase_jwt_secret: str = ""
-    supabase_jwt_audience: str = "authenticated"
-    supabase_service_role_key: str = ""
-    supabase_storage_bucket: str = "selfies"
-
     storage_backend: str = ""
     local_storage_dir: str = "./var/storage"
 
@@ -116,6 +111,17 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 90
     operator_user_ids: str = ""
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _psycopg_url(cls, value: str) -> str:
+        if not isinstance(value, str):
+            return value
+        if value.startswith("postgres://"):
+            value = "postgresql://" + value[len("postgres://") :]
+        if value.startswith("postgresql://") and not value.startswith("postgresql+"):
+            value = "postgresql+psycopg://" + value[len("postgresql://") :]
+        return value
+
     @property
     def unit_cost(self) -> float | None:
         raw = self.youcam_unit_cost_per_task.strip()
@@ -135,11 +141,9 @@ class Settings(BaseSettings):
     def resolved_storage_backend(self) -> str:
         if self.storage_backend:
             return self.storage_backend
-        if self.supabase_url and self.supabase_service_role_key:
-            return "supabase"
         if self.environment == "local":
             return "local"
-        return ""
+        return "database"
 
 
 @lru_cache

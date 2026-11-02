@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.analysis import direction_block
-from app.auth import Principal, decode_supabase_jwt
+from app.auth import Principal, principal_from_session
 from app.config import PIPELINE_VERSION, get_settings
 from app.db import get_db
 from app.errors import AppError, AuthError, ConfigurationError
@@ -56,8 +56,12 @@ def app_error(_request: Request, exc: AppError):
 
 def get_principal(authorization: str | None = Header(default=None)) -> Principal:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise AuthError("missing_token", "Sign in is required.", "Send the Supabase access token as a bearer token.")
-    return decode_supabase_jwt(authorization.split(" ", 1)[1].strip(), settings)
+        raise AuthError(
+            "missing_session",
+            "A browser session is required.",
+            "Open the app in a browser. It creates a random session in local storage. There is no account to sign in to.",
+        )
+    return principal_from_session(authorization.split(" ", 1)[1].strip())
 
 
 def _guard(session: Session, principal: Principal) -> None:
@@ -106,7 +110,7 @@ def runtime():
         "global_daily_unit_cap": settings.youcam_global_daily_unit_cap,
         "minimum_valid_variants": settings.min_valid_variants,
         "storage_backend": settings.resolved_storage_backend or None,
-        "auth_configured": bool(settings.supabase_url or settings.supabase_jwt_secret),
+        "session": "browser",
         "guided_available": True,
     }
 
@@ -125,7 +129,6 @@ def me(principal: Principal = Depends(get_principal), session: Session = Depends
     consent = latest_consent(session, settings, principal.user_id)
     return {
         "user_id": principal.user_id,
-        "email": principal.email,
         "consent": None
         if consent is None
         else {"version": consent.version, "accepted_at": consent.created_at.isoformat()},

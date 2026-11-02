@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/lib/auth";
 
 const links = [
   { href: "/capture", label: "Capture" },
@@ -14,23 +13,13 @@ const links = [
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { email, token, signOut } = useAuth();
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-20 border-b border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-6">
-          <div className="flex items-center justify-between gap-3">
-            <Link href="/capture" className="text-lg font-semibold tracking-tight text-pink">
-              Shade of Doubt
-            </Link>
-            {token ? (
-              <button className="rounded-full border border-line px-3 py-1.5 text-sm sm:hidden" onClick={() => signOut()} type="button">
-                Sign out
-              </button>
-            ) : (
-              <span className="text-sm text-mute sm:hidden">Not signed in</span>
-            )}
-          </div>
+          <Link href="/capture" className="text-lg font-semibold tracking-tight text-pink">
+            Shade of Doubt
+          </Link>
           <nav className="flex flex-1 gap-1 overflow-x-auto text-sm" aria-label="Primary">
             {links.map((link) => {
               const active = pathname === link.href || pathname.startsWith(link.href + "/");
@@ -46,13 +35,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          {token ? (
-            <button className="hidden rounded-full border border-line px-3 py-1.5 text-sm sm:inline" onClick={() => signOut()} type="button">
-              {email || "Signed in"} · Sign out
-            </button>
-          ) : (
-            <span className="hidden text-sm text-mute sm:inline">Not signed in</span>
-          )}
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-5 py-8">{children}</main>

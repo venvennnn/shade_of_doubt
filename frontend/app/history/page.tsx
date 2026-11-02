@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export default function HistoryPage() {
-  const { token } = useAuth();
+  const { token, clearSession } = useAuth();
   const experiments = useQuery({
     queryKey: ["experiments", token],
     enabled: Boolean(token),
@@ -16,7 +16,7 @@ export default function HistoryPage() {
     <div>
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-pink">04 / History</p>
       <h1 className="mt-2 text-4xl font-semibold tracking-tight">Past audits</h1>
-      {!token && <p className="mt-3">Sign in to see history for this account.</p>}
+      {!token && <p className="mt-3">Preparing this browser.</p>}
       <ul className="mt-6 space-y-3">
         {experiments.data?.experiments.map((item) => (
           <li key={item.id} className="rounded-[24px] border border-line p-4">
@@ -51,13 +51,14 @@ export default function HistoryPage() {
           className="mt-6 text-sm text-mute underline"
           type="button"
           onClick={async () => {
-            if (confirm("Delete this account’s photographs, audits, and catalogue? Quota ledger rows are removed with the account.")) {
+            if (confirm("Delete photographs, audits, and catalogue entries stored for this browser?")) {
               await api("/v1/account", token, { method: "DELETE" });
+              clearSession();
               window.location.href = "/capture";
             }
           }}
         >
-          Delete account data
+          Delete this browser’s data
         </button>
       )}
     </div>

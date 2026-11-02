@@ -8,6 +8,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -276,6 +277,15 @@ class GuidedAsset(Base):
     rights_statement: Mapped[str] = mapped_column(Text)
     consent_statement: Mapped[str] = mapped_column(Text)
     published: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class StoredObject(Base):
+    __tablename__ = "stored_objects"
+
+    path: Mapped[str] = mapped_column(String(500), primary_key=True)
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    content_type: Mapped[str] = mapped_column(String(80))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

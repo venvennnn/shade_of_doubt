@@ -50,7 +50,7 @@ export default function CataloguePage() {
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-pink">Catalogue</p>
       <h1 className="mt-2 text-4xl font-semibold tracking-tight">Products you can point to</h1>
       <p className="mt-2 max-w-2xl text-mute">Enter a real name, the page or pack you read, when you read it, and the rights you have in any image. The app does not invent products or guess ingredients.</p>
-      {!token && <p className="mt-4">Sign in on the Capture page first.</p>}
+      {!token && <p className="mt-4">Preparing this browser.</p>}
       {token && (
         <form
           className="mt-6 grid gap-3 sm:max-w-xl"

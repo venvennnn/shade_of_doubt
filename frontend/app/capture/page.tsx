@@ -18,10 +18,6 @@ export default function CapturePage() {
   const auth = useAuth();
   const router = useRouter();
   const runtime = useQuery({ queryKey: ["runtime"], queryFn: () => api<RuntimeInfo>("/v1/runtime", null) });
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [tokenDraft, setTokenDraft] = useState("");
-  const [authMessage, setAuthMessage] = useState("");
   const [external, setExternal] = useState(false);
   const [retention, setRetention] = useState(false);
   const [asset, setAsset] = useState<AssetRecord | null>(null);
@@ -105,62 +101,6 @@ export default function CapturePage() {
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-pink">01 / Capture</p>
       <h1 className="mt-2 max-w-3xl text-4xl font-semibold tracking-tight">Start with a real photograph and a stated consent.</h1>
       <p className="mt-2 max-w-2xl text-mute">The audit submits the unmodified baseline first. If YouCam rejects it, variant tasks are not sent.</p>
-
-      <section className="mt-8 rounded-[28px] border border-line p-5">
-        <h2 className="text-xl font-semibold">Sign in</h2>
-        {auth.configured ? (
-          <form
-            className="mt-3 grid gap-3 sm:max-w-md"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              setAuthMessage("");
-              try {
-                await auth.signIn(email, password);
-              } catch (reason) {
-                setAuthMessage(messageOf(reason));
-              }
-            }}
-          >
-            <label>Email<input className="mt-1 w-full rounded-2xl border border-line px-3 py-2" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
-            <label>Password<input className="mt-1 w-full rounded-2xl border border-line px-3 py-2" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
-            <div className="flex gap-2">
-              <button className="rounded-full bg-ink px-4 py-2 text-sm text-white" type="submit">Sign in</button>
-              <button
-                className="rounded-full border border-line px-4 py-2 text-sm"
-                type="button"
-                onClick={async () => {
-                  try {
-                    setAuthMessage(await auth.signUp(email, password));
-                  } catch (reason) {
-                    setAuthMessage(messageOf(reason));
-                  }
-                }}
-              >
-                Create account
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="mt-3 text-sm">
-            <p>Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to use Supabase sign-in.</p>
-            <form
-              className="mt-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                auth.useToken(tokenDraft.trim());
-              }}
-            >
-              <label>
-                Local access token
-                <input className="mt-1 w-full rounded-2xl border border-line px-3 py-2" value={tokenDraft} onChange={(event) => setTokenDraft(event.target.value)} />
-              </label>
-              <button className="mt-2 rounded-full bg-ink px-4 py-2 text-sm text-white" type="submit">Use token</button>
-            </form>
-          </div>
-        )}
-        {authMessage && <p className="mt-2 text-sm">{authMessage}</p>}
-        {auth.token && <p className="mt-2 text-sm text-mute">Signed in{auth.email ? ` as ${auth.email}` : ""}.</p>}
-      </section>
 
       {runtime.isError && <p className="mt-4 text-sm" role="alert">The API at NEXT_PUBLIC_API_URL could not be reached. Start the API and check the URL baked into this frontend build.</p>}
       {runtime.data && (

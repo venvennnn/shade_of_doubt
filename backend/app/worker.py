@@ -153,7 +153,8 @@ def _fail_configuration(job: Job, exc: AppError) -> None:
 def main() -> None:
     settings = get_settings()
     worker_id = _worker_id(settings)
-    threading.Thread(target=_serve_health, args=(settings.worker_health_port,), daemon=True).start()
+    port = int(os.environ.get("PORT") or settings.worker_health_port)
+    threading.Thread(target=_serve_health, args=(port,), daemon=True).start()
     last_purge = 0.0
     while True:
         session = session_factory()()
