@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: shade
+      POSTGRES_PASSWORD: shade
+      POSTGRES_DB: shade
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shade -d shade"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - shade-db:/var/lib/postgresql/data
+
+  api:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://shade:shade@db:5432/shade
+      STORAGE_BACKEND: local
+      LOCAL_STORAGE_DIR: /data/storage
+      FRONTEND_ORIGIN: http://localhost:3000
+    volumes:
+      - shade-images:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: ./backend
+    command: ["python", "-m", "app.worker"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://shade:shade@db:5432/shade
+      STORAGE_BACKEND: local
+      LOCAL_STORAGE_DIR: /data/storage
+    volumes:
+      - shade-images:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  shade-db:
+  shade-images:
